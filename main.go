@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
 	"unsafe"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -8,8 +10,8 @@ import (
 )
 
 const (
-	screenWidth  = 640
-	screenHeight = 480
+	screenWidth  = 800
+	screenHeight = 600
 )
 
 var texture rl.Texture2D
@@ -22,23 +24,58 @@ func main() {
 	rl.SetTraceLogLevel(rl.LogNone)
 
 	// Generate image
-	opX := &OperatorX{}
-	opY := &OperatorY{}
-	opSin := &OperatorSin{}
-	opNoise := &OperatorNoise{}
-	opAtan2 := &OperatorMult{}
-	opPlus := &OperatorPlus{}
+	aptR := GetRandomNode()
+	aptG := GetRandomNode()
+	aptB := GetRandomNode()
 
-	//opT := &OperatorT{}
-	opAtan2.LeftChild = opX
-	opAtan2.RightChild = opNoise
-	opNoise.LeftChild = opX
-	opNoise.RightChild = opY
-	opSin.Child = opAtan2
-	opPlus.LeftChild = opY
-	opPlus.RightChild = opSin
+	const nodes = 20
 
-	generateImage(opPlus, opPlus, opPlus)
+	num := rand.Intn(nodes)
+	for i := 0; i < num; i++ {
+		aptR.AddRandom(GetRandomNode())
+	}
+
+	num = rand.Intn(nodes)
+	for i := 0; i < num; i++ {
+		aptG.AddRandom(GetRandomNode())
+	}
+
+	num = rand.Intn(nodes)
+	for i := 0; i < num; i++ {
+		aptB.AddRandom(GetRandomNode())
+	}
+
+	for {
+		_, nilCount := aptR.NodeCounts()
+		if nilCount == 0 {
+			break
+		}
+		aptR.AddRandom(GetRandomLeafNode())
+	}
+
+	for {
+		_, nilCount := aptG.NodeCounts()
+		if nilCount == 0 {
+			break
+		}
+		aptG.AddRandom(GetRandomLeafNode())
+	}
+	for {
+		_, nilCount := aptB.NodeCounts()
+		if nilCount == 0 {
+			break
+		}
+		aptB.AddRandom(GetRandomLeafNode())
+	}
+
+	fmt.Println(aptR.String())
+	fmt.Println()
+	fmt.Println(aptG.String())
+	fmt.Println()
+	fmt.Println(aptB.String())
+	fmt.Println()
+
+	generateImage(aptR, aptG, aptB, screenWidth, screenHeight)
 
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
@@ -60,23 +97,15 @@ func main() {
 	rl.CloseWindow()
 }
 
-func generateImage(red, green, blue Node) {
-	generateImageData(red, green, blue)
-
-	image.Data = unsafe.Pointer(unsafe.SliceData(imageData))
-	texture = rl.LoadTextureFromImage(image)
-}
-
-func generateImageData(red, green, blue Node) {
-
+func generateImage(red, green, blue Node, width, height int) {
 	scale := 128.0
 	offset := -1 * scale
 	index = 0
 
-	for y := 0; y < screenHeight; y++ {
-		yy := float64(y)/screenHeight*2 - 1
-		for x := 0; x < screenWidth; x++ {
-			xx := float64(x)/screenWidth*2 - 1
+	for y := 0; y < height; y++ {
+		yy := float64(y)/float64(height)*2 - 1
+		for x := 0; x < width; x++ {
+			xx := float64(x)/float64(width)*2 - 1
 			r := red.Evaluate(xx, yy)
 			g := green.Evaluate(xx, yy)
 			b := blue.Evaluate(xx, yy)
@@ -88,4 +117,7 @@ func generateImageData(red, green, blue Node) {
 			index += 4
 		}
 	}
+
+	image.Data = unsafe.Pointer(unsafe.SliceData(imageData))
+	texture = rl.LoadTextureFromImage(image)
 }
