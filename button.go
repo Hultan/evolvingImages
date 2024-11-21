@@ -5,11 +5,13 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 const fontSize = 64
 
 type Button struct {
-	Rectangle rl.Rectangle
-	Texture   rl.Texture2D
-	Text      string
-	Selected  bool
-	IsClicked func()
+	Index          int32
+	Rectangle      rl.Rectangle
+	Texture        rl.Texture2D
+	Text           string
+	Selected       bool
+	IsLeftClicked  func()
+	IsRightClicked func(*Button)
 }
 
 var font rl.Font
@@ -18,25 +20,30 @@ func initFont() {
 	font = rl.LoadFontEx("MesloLGLDZNerdFont-Bold.ttf", fontSize, []rune("Evolve!"), 0)
 }
 
-func NewButton(rectangle rl.Rectangle, texture rl.Texture2D) *Button {
+func NewButton(index int32, rectangle rl.Rectangle, texture rl.Texture2D, isRightClicked func(*Button)) *Button {
 	if font.BaseSize == 0 {
 		initFont()
 	}
 	return &Button{
-		Rectangle: rectangle,
-		Texture:   texture,
-		Text:      "",
+		Index:          index,
+		Rectangle:      rectangle,
+		Texture:        texture,
+		Text:           "",
+		IsRightClicked: isRightClicked,
+		IsLeftClicked:  nil,
 	}
 }
 
-func NewTextButton(rectangle rl.Rectangle, text string, isClicked func()) *Button {
+func NewTextButton(rectangle rl.Rectangle, text string, isLeftClicked func()) *Button {
 	if font.BaseSize == 0 {
 		initFont()
 	}
 	return &Button{
-		Rectangle: rectangle,
-		Text:      text,
-		IsClicked: isClicked,
+		Index:          -1,
+		Rectangle:      rectangle,
+		Text:           text,
+		IsLeftClicked:  isLeftClicked,
+		IsRightClicked: nil,
 	}
 }
 
@@ -47,8 +54,10 @@ func (b *Button) Update() {
 				b.Selected = !b.Selected
 			} else {
 				// Button was clicked
-				b.IsClicked()
+				b.IsLeftClicked()
 			}
+		} else if rl.IsMouseButtonPressed(rl.MouseButtonRight) {
+			b.IsRightClicked(b)
 		}
 	}
 }

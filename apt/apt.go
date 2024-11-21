@@ -28,17 +28,23 @@ type Node interface {
 // CopyTree copies a tree (or subtree) and returns the copy.
 // Since Node is an interface, we need to use reflection in CopyTree
 func CopyTree(node, parent Node) Node {
-	copy := reflect.New(reflect.ValueOf(node).Elem().Type()).Interface().(Node)
+	nodeCopy := reflect.New(reflect.ValueOf(node).Elem().Type()).Interface().(Node)
 
-	copy.SetParent(parent)
-	copyChildren := make([]Node, len(node.GetChildren()))
-	copy.SetChildren(copyChildren)
-
-	for i := range copyChildren {
-		copyChildren[i] = CopyTree(node.GetChildren()[i], copy)
+	// Make sure that constants have their value copied
+	switch n := node.(type) {
+	case *OperatorConstant:
+		nodeCopy.(*OperatorConstant).Value = n.Value
 	}
 
-	return copy
+	nodeCopy.SetParent(parent)
+	copyChildren := make([]Node, len(node.GetChildren()))
+	nodeCopy.SetChildren(copyChildren)
+
+	for i := range copyChildren {
+		copyChildren[i] = CopyTree(node.GetChildren()[i], nodeCopy)
+	}
+
+	return nodeCopy
 }
 
 func ReplaceNode(old, new Node) {
@@ -478,6 +484,31 @@ func (op *OperatorWrap) String() string {
 	return "(Wrap " + op.Children[0].String() + ")"
 }
 
+// OperatorSwirl : https://mathworld.wolfram.com/Swirl.html
+type OperatorSwirl struct {
+	BaseNode
+}
+
+func NewSwirl() *OperatorSwirl {
+	return &OperatorSwirl{
+		BaseNode{
+			Parent:   nil,
+			Children: make([]Node, 3),
+		},
+	}
+}
+
+func (op *OperatorSwirl) Evaluate(x, y float64) float64 {
+	r := op.Children[0].Evaluate(x, y)
+	n := op.Children[1].Evaluate(x, y)
+	theta := op.Children[0].Evaluate(x, y)
+	return math.Sin(6*math.Cos(r) - n*theta)
+}
+
+func (op *OperatorSwirl) String() string {
+	return "( Swirl " + op.Children[0].String() + " " + op.Children[1].String() + " " + op.Children[2].String() + " )"
+}
+
 type OperatorFBM struct {
 	BaseNode
 }
@@ -675,7 +706,7 @@ func (op *OperatorConstant) String() string {
 }
 
 func GetRandomNode() Node {
-	r := rand.Intn(19)
+	r := rand.Intn(21)
 	switch r {
 	case 0:
 		return NewPlus()
@@ -717,6 +748,8 @@ func GetRandomNode() Node {
 		return NewFBM()
 	case 19:
 		return NewTurbulence()
+	case 20:
+		return NewSwirl()
 
 	default:
 		panic("GetRandomNode failed")

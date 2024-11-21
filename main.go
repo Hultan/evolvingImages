@@ -1,7 +1,16 @@
 package main
 
+// TODO : pictures should be part of button?
+// TODO : Make the zoomed in picture show a loading indicator
+// TODO : Instead of passing x and y for each pixel, pass a slice of all the arguments
+// TODO : Make the String functions output valid go code and make a program that will execute it
+// TODO : Do a grayscale picture, or an HSV picture, or a black and white image (<0.5)
+// TODO :
+
 import (
+	"fmt"
 	"math/rand"
+	"time"
 	"unsafe"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -14,13 +23,28 @@ const (
 	mutationRate       = 10
 )
 
+type stateType int
+
+const (
+	stateInit stateType = iota
+	stateSelect
+	stateZoom
+)
+
 var screenWidth, screenHeight int32 = 1600, 900
 var rows, cols, numPics int32 = 5, 5, rows * cols
-var picWidth, picHeight int32
-var imageChannel chan ImageResult
-var buttons []*Button
-var pictures []*Picture
+var picWidth, picHeight = int32(float32(screenWidth/cols) * 0.9), int32(float32(screenHeight/rows) * 0.8)
+var imageChannel = make(chan ImageResult, numPics)
+var buttons = make([]*Button, numPics)
+var pictures = make([]*Picture, numPics)
+var state GuiState
+var evolveButton *Button
 
+type GuiState struct {
+	zoom      stateType
+	zoomedIn  time.Time
+	zoomImage rl.Texture2D
+}
 type ImageResult struct {
 	Image *rl.Image
 	index int32
@@ -35,99 +59,80 @@ func main() {
 	rl.InitWindow(screenWidth, screenHeight, "Evolving Images")
 	rl.SetTraceLogLevel(rl.LogNone)
 
-	picWidth = int32(float32(screenWidth/cols) * 0.9)
-	picHeight = int32(float32(screenHeight/rows) * 0.8)
-
-	pictures = make([]*Picture, numPics)
-	for i := range pictures {
-		pictures[i] = NewPicture()
-	}
-
-	buttons = make([]*Button, numPics)
-
-	evolveRect := rl.Rectangle{
-		X:      float32(screenWidth)/2 - float32(picWidth)/2,
-		Y:      float32(screenHeight) * 0.9,
-		Width:  float32(picWidth),
-		Height: float32(screenHeight) * 0.08,
-	}
-	evolveButton := NewTextButton(evolveRect, "Evolve!", evolveButtonClicked)
-
-	imageChannel = make(chan ImageResult, numPics)
-	for i := range buttons {
-		go func(i int) {
-			image := generateImage(pictures[i], picWidth, picHeight)
-			imageChannel <- ImageResult{
-				image,
-				int32(i),
-			}
-		}(i)
-	}
+	state = GuiState{zoom: stateInit}
 
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
 		// Update
-		//screenWidth = int32(rl.GetScreenWidth())
-		//screenHeight = int32(rl.GetScreenHeight())
-		//picWidth = int32(float32(screenWidth/cols) * 0.9)
-		//picHeight = int32(float32(screenHeight/rows) * 0.8)
+		if rl.IsWindowResized() {
+			onGenerateNewImage()
+		}
+
+		if state.zoom == stateInit {
+			onGenerateNewImage()
+			state.zoom = stateSelect
+		}
 
 		evolveButton.Update()
 
 		if rl.IsKeyPressed(rl.KeyF5) {
-
+			onGenerateNewImage()
 		}
 
 		// Draw
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 
-		evolveButton.Draw()
+		if state.zoom == stateZoom {
+			if time.Since(state.zoomedIn).Seconds() > 1 && rl.IsMouseButtonPressed(rl.MouseButtonRight) {
+				state.zoom = stateSelect
+			}
+			rl.DrawTexture(state.zoomImage, 0, 0, rl.White)
+		} else if state.zoom == stateSelect {
+			evolveButton.Draw()
 
-		select {
-		case img, ok := <-imageChannel:
-			if ok {
-				// Calculate image x,y position (1-3,1-3)
-				xi := img.index % cols
-				yi := (img.index - xi) / cols
-				// Calculate image screen x,y position (in pixels)
-				x := xi * picWidth
-				y := yi * picHeight
-				// Calculate padding around images
-				xPadding := int32(float32(screenWidth) * 0.1 / float32(cols+1))
-				yPadding := int32(float32(screenHeight) * 0.1 / float32(rows+1))
-				// Add padding to the screen position
-				x += xPadding * (int32(xi) + 1)
-				y += yPadding * (int32(yi) + 1)
+			select {
+			case img, ok := <-imageChannel:
+				if ok {
+					// Calculate image x,y position (1-3,1-3)
+					xi := img.index % cols
+					yi := (img.index - xi) / cols
+					// Calculate image screen x,y position (in pixels)
+					x := xi * picWidth
+					y := yi * picHeight
+					// Calculate padding around images
+					xPadding := int32(float32(screenWidth) * 0.1 / float32(cols+1))
+					yPadding := int32(float32(screenHeight) * 0.1 / float32(rows+1))
+					// Add padding to the screen position
+					x += xPadding * (int32(xi) + 1)
+					y += yPadding * (int32(yi) + 1)
 
-				if buttons[img.index] == nil {
 					rec := rl.Rectangle{
 						X:      float32(x),
 						Y:      float32(y),
 						Width:  float32(picWidth),
 						Height: float32(picHeight),
 					}
-					buttons[img.index] = NewButton(rec, rl.LoadTextureFromImage(img.Image))
-					//buttons[img.index] = NewTextButton(rec, "Per", func() {
-					//	fmt.Println("Button was clicked!")
-					//})
+					buttons[img.index] = NewButton(img.index, rec, rl.LoadTextureFromImage(img.Image), onFullScreen)
 				}
-
-				buttons[img.index].Draw()
+			default:
+				// Do nothing
 			}
-		default:
-			// Do nothing
-		}
 
-		// Draw textures at the correct position
-		for _, button := range buttons {
-			if button != nil {
-				button.Update()
-				button.Draw()
+			// Draw textures at the correct position
+			for _, button := range buttons {
+				if button != nil {
+					button.Update()
+					button.Draw()
+				}
 			}
 		}
 
-		rl.DrawFPS(25, screenHeight-40)
+		x := screenWidth - 600
+		rl.DrawText("Left mouse click : select an image.", x, screenHeight-80, 24, rl.LightGray)
+		rl.DrawText("Right mouse click : zoom in/out.", x, screenHeight-50, 24, rl.LightGray)
+
+		rl.DrawFPS(25, screenHeight-50)
 		rl.EndDrawing()
 	}
 
@@ -137,6 +142,48 @@ func main() {
 	}
 
 	rl.CloseWindow()
+}
+
+func onGenerateNewImage() {
+	screenWidth = int32(rl.GetScreenWidth())
+	screenHeight = int32(rl.GetScreenHeight())
+	picWidth = int32(float32(screenWidth/cols) * 0.9)
+	picHeight = int32(float32(screenHeight/rows) * 0.8)
+	for i := range pictures {
+		pictures[i] = NewPicture()
+	}
+
+	evolveRect := rl.Rectangle{
+		X:      float32(screenWidth)/2 - float32(picWidth)/2,
+		Y:      float32(screenHeight) * 0.9,
+		Width:  float32(picWidth),
+		Height: float32(screenHeight) * 0.08,
+	}
+	evolveButton = NewTextButton(evolveRect, "Evolve!", evolveButtonClicked)
+
+	for i := range buttons {
+		go func(i int) {
+			image := generateImage(pictures[i], picWidth, picHeight)
+			imageChannel <- ImageResult{
+				image,
+				int32(i),
+			}
+		}(i)
+	}
+}
+
+func onFullScreen(button *Button) {
+	if state.zoom == stateSelect {
+		zoomImage := generateImage(pictures[button.Index], screenWidth, int32(float32(screenHeight)*0.9))
+		zoomTexture := rl.LoadTextureFromImage(zoomImage)
+		state.zoomImage = zoomTexture
+		state.zoom = stateZoom
+		state.zoomedIn = time.Now()
+
+		fmt.Println()
+		fmt.Println("Equations:")
+		fmt.Println(pictures[button.Index])
+	}
 }
 
 func evolveButtonClicked() {
