@@ -2,7 +2,7 @@ package main
 
 import rl "github.com/gen2brain/raylib-go/raylib"
 
-const fontSize = 24
+const fontSize = 64
 
 type Button struct {
 	Rectangle rl.Rectangle
@@ -12,7 +12,16 @@ type Button struct {
 	IsClicked func()
 }
 
+var font rl.Font
+
+func initFont() {
+	font = rl.LoadFontEx("MesloLGLDZNerdFont-Bold.ttf", fontSize, []rune("Evolve!"), 0)
+}
+
 func NewButton(rectangle rl.Rectangle, texture rl.Texture2D) *Button {
+	if font.BaseSize == 0 {
+		initFont()
+	}
 	return &Button{
 		Rectangle: rectangle,
 		Texture:   texture,
@@ -21,6 +30,9 @@ func NewButton(rectangle rl.Rectangle, texture rl.Texture2D) *Button {
 }
 
 func NewTextButton(rectangle rl.Rectangle, text string, isClicked func()) *Button {
+	if font.BaseSize == 0 {
+		initFont()
+	}
 	return &Button{
 		Rectangle: rectangle,
 		Text:      text,
@@ -46,10 +58,15 @@ func (b *Button) Draw() {
 		rl.DrawTexture(b.Texture, int32(b.Rectangle.X), int32(b.Rectangle.Y), rl.White)
 	} else {
 		rl.DrawRectangleRec(b.Rectangle, rl.White)
-		tw := rl.MeasureText(b.Text, fontSize)
-		x := int32(b.Rectangle.X + b.Rectangle.Width/2 - float32(tw)/2)
-		y := int32(b.Rectangle.Y + b.Rectangle.Height/2 - fontSize/2)
-		rl.DrawText(b.Text, x, y, fontSize, rl.Black)
+		tw := rl.MeasureTextEx(font, b.Text, fontSize, 0)
+		x := b.Rectangle.X + b.Rectangle.Width/2 - tw.X/2
+		y := b.Rectangle.Y + b.Rectangle.Height/2 - tw.Y/2
+		r := rl.Vector2{
+			X: x,
+			Y: y,
+		}
+		//rl.DrawText(b.Text, x, y, fontSize, rl.Black)
+		rl.DrawTextEx(font, b.Text, r, fontSize, 0, rl.Black)
 	}
 	if b.Selected {
 		rl.DrawRectangleLinesEx(b.Rectangle, 2, rl.White)

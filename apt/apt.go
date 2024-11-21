@@ -3,6 +3,7 @@ package apt
 import (
 	"math"
 	"math/rand"
+	"reflect"
 	"strconv"
 
 	"github.com/hultan/evolvingImage/noise"
@@ -17,10 +18,41 @@ type Node interface {
 	String() string
 	SetParent(parent Node)
 	GetParent() Node
+	SetChildren([]Node)
 	GetChildren() []Node
 	AddRandom(node Node)
 	AddLeaf(leaf Node) bool
 	NodeCount() int
+}
+
+// CopyTree copies a tree (or subtree) and returns the copy.
+// Since Node is an interface, we need to use reflection in CopyTree
+func CopyTree(node, parent Node) Node {
+	copy := reflect.New(reflect.ValueOf(node).Elem().Type()).Interface().(Node)
+
+	copy.SetParent(parent)
+	copyChildren := make([]Node, len(node.GetChildren()))
+	copy.SetChildren(copyChildren)
+
+	for i := range copyChildren {
+		copyChildren[i] = CopyTree(node.GetChildren()[i], copy)
+	}
+
+	return copy
+}
+
+func ReplaceNode(old, new Node) {
+	oldParent := old.GetParent()
+
+	if oldParent != nil {
+		for i, node := range oldParent.GetChildren() {
+			if node == old {
+				oldParent.GetChildren()[i] = new
+			}
+		}
+	}
+
+	new.SetParent(oldParent)
 }
 
 func GetNthNode(node Node, n, count int) (Node, int) {
@@ -90,6 +122,10 @@ func (b *BaseNode) GetChildren() []Node {
 	return b.Children
 }
 
+func (b *BaseNode) SetChildren(children []Node) {
+	b.Children = children
+}
+
 func (b *BaseNode) NodeCount() int {
 	count := 1
 	for _, child := range b.Children {
@@ -106,7 +142,7 @@ func (b *BaseNode) SetParent(parent Node) {
 	b.Parent = parent
 }
 
-func (b *BaseNode) Evaluate(x, y float64) float64 {
+func (b *BaseNode) Evaluate(_, _ float64) float64 {
 	panic("should call Evaluate() on a BaseNode")
 }
 
