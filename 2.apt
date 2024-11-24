@@ -1,0 +1,5 @@
+( Picture 
+( Negate ( Cos ( Floor ( Abs ( Swirl ( Clip ( Turbulence ( Wrap x ) y ( - x ( * x x ) ) ) ( Wrap ( * y ( Wrap x ) ) ) ) ( Square ( SimplexNoise ( Log2 0.697155251 ) ( Floor ( Cos ( Cos x ) ) ) ) ) ( Abs 0.254699547 ) ) ) ) ) ) 
+( - ( Sin ( Ceil ( Clip ( Atan2 ( / ( Atan ( Abs -0.778158085 ) ) x ) ( Negate ( Turbulence 0.578624402 y ( FBM -0.112786192 ( Ceil x ) ( Lerp x x 0.339454469 ) ) ) ) ) ( Square ( SimplexNoise ( Sin ( Turbulence ( + -0.451563177 y ) ( Atan y ) -0.522272585 ) ) ( + x x ) ) ) ) ) ) ( / ( + ( SimplexNoise ( Floor y ) 0.221054616 ) ( + y 0.199907305 ) ) ( Floor ( Sin ( Abs ( Atan2 ( Wrap y ) y ) ) ) ) ) ) 
+( * ( Negate ( Floor ( Atan ( * ( - ( Floor 0.028174702 ) ( Turbulence x y ( Lerp x x y ) ) ) ( SimplexNoise ( SimplexNoise y 0.883259555 ) -0.106342848 ) ) ) ) ) x ) 
+)

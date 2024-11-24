@@ -60,6 +60,12 @@ type Picture struct {
 }
 
 func main() {
+	rl.SetConfigFlags(rl.FlagWindowResizable)
+	rl.InitWindow(screenWidth, screenHeight, "Evolving Images")
+	rl.SetTraceLogLevel(rl.LogNone)
+
+	state = GuiState{zoom: stateInit}
+
 	args := os.Args
 	if len(args) > 1 {
 		bytes, err := os.ReadFile(args[1])
@@ -67,15 +73,19 @@ func main() {
 			panic(err)
 		}
 		str := string(bytes)
-		_ = BeginLexing(str)
-		return
+		pictureNode := BeginLexing(str)
+		p := &Picture{
+			r: pictureNode.GetChildren()[0],
+			g: pictureNode.GetChildren()[1],
+			b: pictureNode.GetChildren()[2],
+		}
+		// TODO Duplicated code, see onFullScreen
+		zoomImage := generateImage(p, screenWidth, int32(float32(screenHeight)*0.9))
+		state.zoomImage = rl.LoadTextureFromImage(zoomImage)
+		state.zoomTree = p
+		state.zoom = stateZoom
+		state.zoomedIn = time.Now()
 	}
-
-	rl.SetConfigFlags(rl.FlagWindowResizable)
-	rl.InitWindow(screenWidth, screenHeight, "Evolving Images")
-	rl.SetTraceLogLevel(rl.LogNone)
-
-	state = GuiState{zoom: stateInit}
 
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
@@ -89,7 +99,9 @@ func main() {
 			state.zoom = stateSelect
 		}
 
-		evolveButton.Update()
+		if evolveButton != nil {
+			evolveButton.Update()
+		}
 
 		if rl.IsKeyPressed(rl.KeyS) && state.zoom == stateZoom {
 			onSaveTree(state.zoomTree)
@@ -158,7 +170,9 @@ func main() {
 
 	// Clean up
 	for i := range buttons {
-		rl.UnloadTexture(buttons[i].Texture)
+		if buttons[i] != nil {
+			rl.UnloadTexture(buttons[i].Texture)
+		}
 	}
 
 	rl.CloseWindow()
@@ -200,7 +214,7 @@ func onGenerateNewImage() {
 	picWidth = int32(float32(screenWidth/cols) * 0.9)
 	picHeight = int32(float32(screenHeight/rows) * 0.8)
 	for i := range pictures {
-		pictures[i] = NewPicture()
+		pictures[i] = CreateNewPicture()
 	}
 
 	evolveRect := rl.Rectangle{
@@ -225,8 +239,7 @@ func onGenerateNewImage() {
 func onFullScreen(button *Button) {
 	if state.zoom == stateSelect {
 		zoomImage := generateImage(pictures[button.Index], screenWidth, int32(float32(screenHeight)*0.9))
-		zoomTexture := rl.LoadTextureFromImage(zoomImage)
-		state.zoomImage = zoomTexture
+		state.zoomImage = rl.LoadTextureFromImage(zoomImage)
 		state.zoomTree = pictures[button.Index]
 		state.zoom = stateZoom
 		state.zoomedIn = time.Now()
@@ -347,7 +360,7 @@ func generateImage(p *Picture, width, height int32) *rl.Image {
 	return image
 }
 
-func NewPicture() *Picture {
+func CreateNewPicture() *Picture {
 	p := &Picture{}
 
 	// Generate image
@@ -383,7 +396,7 @@ func NewPicture() *Picture {
 }
 
 func (p *Picture) String() string {
-	return "( Picture (" + p.r.String() + ") (" + p.g.String() + ") (" + p.b.String() + ") )"
+	return "( Picture \n" + p.r.String() + " \n" + p.g.String() + " \n" + p.b.String() + " \n)"
 }
 
 func (p *Picture) mutate() {

@@ -179,6 +179,25 @@ func (b *BaseNode) AddLeaf(leaf Node) bool {
 	return false
 }
 
+type OperatorPicture struct {
+	BaseNode
+}
+
+func NewPicture() *OperatorPicture {
+	return &OperatorPicture{BaseNode: BaseNode{Children: make([]Node, 3)}}
+}
+
+func (op *OperatorPicture) Evaluate(_, _ float64) float64 {
+	panic("eval called on the root of the picture tree")
+}
+
+func (op *OperatorPicture) String() string {
+	return "( Picture \n" + op.Children[0].String() +
+		" \n" + op.Children[1].String() +
+		" \n" + op.Children[2].String() +
+		" \n)"
+}
+
 type OperatorPlus struct {
 	BaseNode
 }
@@ -313,7 +332,7 @@ func NewSquare() *OperatorSquare {
 	return &OperatorSquare{
 		BaseNode{
 			Parent:   nil,
-			Children: make([]Node, 2),
+			Children: make([]Node, 1),
 		},
 	}
 }
@@ -481,7 +500,7 @@ func (op *OperatorWrap) Evaluate(x, y float64) float64 {
 }
 
 func (op *OperatorWrap) String() string {
-	return "(Wrap " + op.Children[0].String() + ")"
+	return "( Wrap " + op.Children[0].String() + " )"
 }
 
 // OperatorSwirl : https://mathworld.wolfram.com/Swirl.html

@@ -1,4 +1,5 @@
-( picture () () () )
-R:( Atan2 ( Clip ( Swirl ( Floor ( Cos 0.636029218 ) ) x ( Cos ( Clip ( Floor y ) x ) ) ) ( Ceil ( Lerp -0.697938412 -0.271660186 y ) ) ) ( + ( Turbulence ( Abs ( Sin ( Log2 y ) ) ) ( Atan2 0.622833104 y ) ( Negate ( Floor ( Turbulence y -0.263403156 -0.236455877 ) ) ) ) ( Clip ( Sin ( Clip ( Atan2 0.815960103 y ) x ) ) ( Abs x ) ) ) )
-G:( + ( Lerp y y y ) ( Square ( Turbulence ( Clip -0.710185077 x ) x -0.902187586 ) ) )
-B:( Atan2 ( - ( Cos ( Floor ( + (Wrap ( Turbulence x ( Ceil y ) 0.131037605 )) ( * y ( Floor y ) ) ) ) ) ( + 0.837204890 ( Turbulence -0.524106419 ( Lerp ( * 0.438803288 x ) -0.825700036 0.881637425 ) x ) ) ) ( Floor ( Swirl ( / y ( Atan -0.542457038 ) ) ( Square ( Clip y x ) ) ( FBM ( Cos 0.519366754 ) ( Atan ( Cos x ) ) ( Negate ( Swirl 0.240938820 x x ) ) ) ) ) )
+( Picture 
+( Atan2 ( FBM ( Lerp ( * y y ) x y ) ( Square ( Square ( Atan y ) ) ) ( Floor ( Atan2 ( Atan ( Wrap ( Clip 0.015779892 0.262902056 ) ) ) x ) ) ) ( Wrap ( + ( Lerp ( Atan x ) x ( Wrap y ) ) ( Negate ( Ceil y ) ) ) ) ) 
+( Atan ( Floor ( FBM ( + ( - ( / y y ) ( + y ( Cos y ) ) ) ( Abs ( Abs ( Log2 -0.067618366 ) ) ) ) ( Square ( SimplexNoise ( Negate 0.841207757 ) ( Wrap ( Log2 ( Swirl -0.873232469 x x ) ) ) ) ) ( Floor ( Atan ( Swirl ( Atan ( - y y ) ) ( Square ( Sin ( Floor -0.828694614 ) ) ) ( Sin ( Sin y ) ) ) ) ) ) ) ) 
+( Turbulence ( Lerp ( Atan y ) ( Lerp y -0.174766904 ( FBM -0.495425532 y 0.428294716 ) ) ( FBM 0.659348345 y x ) ) ( SimplexNoise ( + ( Lerp x 0.803029534 x ) ( Clip ( Atan2 0.440816699 0.796636710 ) ( FBM y -0.944134853 0.117766336 ) ) ) ( Negate ( Lerp ( Abs -0.332241639 ) ( Sin x ) ( Wrap x ) ) ) ) ( Floor ( Log2 ( Turbulence ( Clip ( Atan2 ( Wrap y ) y ) ( Sin y ) ) y ( / x x ) ) ) ) ) 
+)
