@@ -2,7 +2,7 @@ package main
 
 // TODO : pictures should be part of button?
 // TODO : Make the zoomed in picture show a loading indicator
-// TODO : Instead of passing x and y for each pixel, pass a slice of all the arguments
+// TODO : (Impossible?) Instead of passing x and y for each pixel, pass a slice of all the arguments
 // TODO : Make the String functions output valid go code and make a program that will execute it
 // TODO : Do a grayscale picture, or an HSV picture, or a black and white image (<0.5)
 // TODO :
@@ -10,6 +10,9 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -44,7 +47,9 @@ type GuiState struct {
 	zoom      stateType
 	zoomedIn  time.Time
 	zoomImage rl.Texture2D
+	zoomTree  *Picture
 }
+
 type ImageResult struct {
 	Image *rl.Image
 	index int32
@@ -55,6 +60,17 @@ type Picture struct {
 }
 
 func main() {
+	args := os.Args
+	if len(args) > 1 {
+		bytes, err := os.ReadFile(args[1])
+		if err != nil {
+			panic(err)
+		}
+		str := string(bytes)
+		_ = BeginLexing(str)
+		return
+	}
+
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.InitWindow(screenWidth, screenHeight, "Evolving Images")
 	rl.SetTraceLogLevel(rl.LogNone)
@@ -74,6 +90,10 @@ func main() {
 		}
 
 		evolveButton.Update()
+
+		if rl.IsKeyPressed(rl.KeyS) && state.zoom == stateZoom {
+			onSaveTree(state.zoomTree)
+		}
 
 		if rl.IsKeyPressed(rl.KeyF5) {
 			onGenerateNewImage()
@@ -144,6 +164,36 @@ func main() {
 	rl.CloseWindow()
 }
 
+func onSaveTree(p *Picture) {
+	files, err := os.ReadDir("./")
+	if err != nil {
+		panic(err)
+	}
+
+	biggest := 0
+	for _, f := range files {
+		name := f.Name()
+		if strings.HasSuffix(name, ".apt") {
+			numberString := strings.TrimSuffix(name, ".apt")
+			num, err := strconv.Atoi(numberString)
+			if err != nil {
+				panic(err)
+			}
+			if num > biggest {
+				biggest = num
+			}
+		}
+	}
+	name := fmt.Sprintf("%d.apt", biggest+1)
+	file, err := os.Create(name)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	fmt.Fprintf(file, p.String())
+}
+
 func onGenerateNewImage() {
 	screenWidth = int32(rl.GetScreenWidth())
 	screenHeight = int32(rl.GetScreenHeight())
@@ -177,12 +227,9 @@ func onFullScreen(button *Button) {
 		zoomImage := generateImage(pictures[button.Index], screenWidth, int32(float32(screenHeight)*0.9))
 		zoomTexture := rl.LoadTextureFromImage(zoomImage)
 		state.zoomImage = zoomTexture
+		state.zoomTree = pictures[button.Index]
 		state.zoom = stateZoom
 		state.zoomedIn = time.Now()
-
-		fmt.Println()
-		fmt.Println("Equations:")
-		fmt.Println(pictures[button.Index])
 	}
 }
 
@@ -336,7 +383,7 @@ func NewPicture() *Picture {
 }
 
 func (p *Picture) String() string {
-	return "R:" + p.r.String() + "\nG:" + p.g.String() + "\nB:" + p.b.String()
+	return "( Picture (" + p.r.String() + ") (" + p.g.String() + ") (" + p.b.String() + ") )"
 }
 
 func (p *Picture) mutate() {

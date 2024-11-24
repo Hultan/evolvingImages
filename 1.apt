@@ -1,0 +1,4 @@
+( picture () () () )
+R:( Atan2 ( Clip ( Swirl ( Floor ( Cos 0.636029218 ) ) x ( Cos ( Clip ( Floor y ) x ) ) ) ( Ceil ( Lerp -0.697938412 -0.271660186 y ) ) ) ( + ( Turbulence ( Abs ( Sin ( Log2 y ) ) ) ( Atan2 0.622833104 y ) ( Negate ( Floor ( Turbulence y -0.263403156 -0.236455877 ) ) ) ) ( Clip ( Sin ( Clip ( Atan2 0.815960103 y ) x ) ) ( Abs x ) ) ) )
+G:( + ( Lerp y y y ) ( Square ( Turbulence ( Clip -0.710185077 x ) x -0.902187586 ) ) )
+B:( Atan2 ( - ( Cos ( Floor ( + (Wrap ( Turbulence x ( Ceil y ) 0.131037605 )) ( * y ( Floor y ) ) ) ) ) ( + 0.837204890 ( Turbulence -0.524106419 ( Lerp ( * 0.438803288 x ) -0.825700036 0.881637425 ) x ) ) ) ( Floor ( Swirl ( / y ( Atan -0.542457038 ) ) ( Square ( Clip y x ) ) ( FBM ( Cos 0.519366754 ) ( Atan ( Cos x ) ) ( Negate ( Swirl 0.240938820 x x ) ) ) ) ) )
