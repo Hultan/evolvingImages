@@ -5,3 +5,5 @@ You can find his youtube channel and the playlist here : [youtube](https://www.y
 I decided to go with RayLib ([Go-bindings](https://github.com/gen2brain/raylib-go)) instead of SDL.
 
 Both EvolvingPictures and MesloLGLDZNerdFont-bold.ttf are under MIT License.
+
+![Evolving Images](./application.png)
