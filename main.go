@@ -137,7 +137,7 @@ func main() {
 			}
 		}
 
-		x := screenWidth - 600
+		x := screenWidth - 430
 		rl.DrawText("Left mouse click : select an image.", x, screenHeight-80, 24, rl.LightGray)
 		rl.DrawText("Right mouse click : zoom in/out.", x, screenHeight-50, 24, rl.LightGray)
 
