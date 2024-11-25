@@ -61,7 +61,7 @@ func main() {
 	// Handle parsing of an .apt file
 	args := os.Args
 	if len(args) > 1 {
-		handleArgs(args[1])
+		handleParsing(args[1])
 	}
 
 	rl.SetTargetFPS(60)
@@ -155,7 +155,7 @@ func main() {
 	rl.CloseWindow()
 }
 
-func handleArgs(fileName string) {
+func handleParsing(fileName string) {
 	bytes, err := os.ReadFile(fileName)
 	if err != nil {
 		panic(err)
