@@ -1,4 +1,4 @@
-package main
+package picture
 
 import (
 	"fmt"
@@ -10,19 +10,23 @@ import (
 	"github.com/hultan/evolvingImage/apt"
 )
 
-const nodes = imageComplexity
+const (
+	imageComplexity    = 25
+	imageMinComplexity = 5
+	nodes              = imageComplexity
+)
 
 type Picture struct {
-	r, g, b apt.Node
+	R, G, B apt.Node
 }
 
-func newPicture() *Picture {
+func NewPicture() *Picture {
 	p := &Picture{}
 
 	// Generate image
-	p.r = p.newNode()
-	p.g = p.newNode()
-	p.b = p.newNode()
+	p.R = p.newNode()
+	p.G = p.newNode()
+	p.B = p.newNode()
 
 	return p
 }
@@ -43,20 +47,20 @@ func (p *Picture) newNode() apt.Node {
 }
 
 func (p *Picture) String() string {
-	return "( Picture \n" + p.r.String() + " \n" + p.g.String() + " \n" + p.b.String() + " \n)"
+	return "( Picture \n" + p.R.String() + " \n" + p.G.String() + " \n" + p.B.String() + " \n)"
 }
 
-func (p *Picture) mutate() {
+func (p *Picture) Mutate() {
 	r := rand.Intn(3)
 	var nodeToMutate apt.Node
 
 	switch r {
 	case 0:
-		nodeToMutate = p.r
+		nodeToMutate = p.R
 	case 1:
-		nodeToMutate = p.g
+		nodeToMutate = p.G
 	case 2:
-		nodeToMutate = p.b
+		nodeToMutate = p.B
 	default:
 		panic("should not happen")
 	}
@@ -67,16 +71,16 @@ func (p *Picture) mutate() {
 	// If the node that we mutated is one of the root nodes
 	// we need to handle that.
 	mutation := apt.Mutate(nodeToMutate)
-	if mutation == p.r {
-		p.r = mutation
-	} else if mutation == p.g {
-		p.g = mutation
-	} else if mutation == p.b {
-		p.b = mutation
+	if mutation == p.R {
+		p.R = mutation
+	} else if mutation == p.G {
+		p.G = mutation
+	} else if mutation == p.B {
+		p.B = mutation
 	}
 }
 
-func (p *Picture) save() {
+func (p *Picture) Save() {
 	files, err := os.ReadDir("./")
 	if err != nil {
 		panic(err)
@@ -109,11 +113,11 @@ func (p *Picture) save() {
 	}
 }
 
-func (p *Picture) cross(other *Picture) *Picture {
+func (p *Picture) Cross(other *Picture) *Picture {
 	aCopy := &Picture{
-		apt.CopyTree(p.r, nil),
-		apt.CopyTree(p.g, nil),
-		apt.CopyTree(p.b, nil),
+		apt.CopyTree(p.R, nil),
+		apt.CopyTree(p.G, nil),
+		apt.CopyTree(p.B, nil),
 	}
 	aColor := aCopy.pickRandomColor()
 	bColor := other.pickRandomColor()
@@ -133,11 +137,11 @@ func (p *Picture) pickRandomColor() apt.Node {
 	r := rand.Intn(3)
 	switch r {
 	case 0:
-		return p.r
+		return p.R
 	case 1:
-		return p.g
+		return p.G
 	case 2:
-		return p.b
+		return p.B
 	default:
 		panic("PickRandomColor : Should not happen!")
 	}

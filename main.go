@@ -15,12 +15,11 @@ import (
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/hultan/evolvingImage/apt"
+	"github.com/hultan/evolvingImage/picture"
 )
 
 const (
-	imageComplexity    = 25
-	imageMinComplexity = 5
-	mutationRate       = 10
+	mutationRate = 10
 )
 
 type stateType int
@@ -36,7 +35,7 @@ var rows, cols, numPics int32 = 5, 5, rows * cols
 var picWidth, picHeight = int32(float32(screenWidth/cols) * 0.9), int32(float32(screenHeight/rows) * 0.8)
 var imageChannel = make(chan ImageResult, numPics)
 var buttons = make([]*Button, numPics)
-var pictures = make([]*Picture, numPics)
+var pictures = make([]*picture.Picture, numPics)
 var state GuiState
 var evolveButton *Button
 
@@ -44,7 +43,7 @@ type GuiState struct {
 	zoom      stateType
 	zoomedIn  time.Time
 	zoomImage rl.Texture2D
-	zoomTree  *Picture
+	zoomTree  *picture.Picture
 }
 
 type ImageResult struct {
@@ -82,7 +81,7 @@ func main() {
 		}
 
 		if rl.IsKeyPressed(rl.KeyS) && state.zoom == stateZoom {
-			state.zoomTree.save()
+			state.zoomTree.Save()
 		}
 
 		if rl.IsKeyPressed(rl.KeyF5) {
@@ -163,15 +162,15 @@ func handleArgs(fileName string) {
 	}
 	str := string(bytes)
 	pictureNode := apt.BeginLexing(str)
-	p := &Picture{
-		r: pictureNode.GetChildren()[0],
-		g: pictureNode.GetChildren()[1],
-		b: pictureNode.GetChildren()[2],
+	p := &picture.Picture{
+		R: pictureNode.GetChildren()[0],
+		G: pictureNode.GetChildren()[1],
+		B: pictureNode.GetChildren()[2],
 	}
 	zoomIn(p)
 }
 
-func zoomIn(p *Picture) {
+func zoomIn(p *picture.Picture) {
 	zoomImage := newImage(p, screenWidth, int32(float32(screenHeight)*0.9))
 	state.zoomImage = rl.LoadTextureFromImage(zoomImage)
 	state.zoomTree = p
@@ -185,7 +184,7 @@ func onGenerateNewImages() {
 	picWidth = int32(float32(screenWidth/cols) * 0.9)
 	picHeight = int32(float32(screenHeight/rows) * 0.8)
 	for i := range pictures {
-		pictures[i] = newPicture()
+		pictures[i] = picture.NewPicture()
 	}
 
 	evolveRect := rl.Rectangle{
@@ -214,7 +213,7 @@ func onFullScreen(button *Button) {
 }
 
 func onEvolveButtonClicked() {
-	selectedPictures := make([]*Picture, 0)
+	selectedPictures := make([]*picture.Picture, 0)
 	for i, button := range buttons {
 		if button.Selected {
 			selectedPictures = append(selectedPictures, pictures[i])
@@ -239,34 +238,34 @@ func onEvolveButtonClicked() {
 	}
 }
 
-func evolve(survivors []*Picture) []*Picture {
-	newPics := make([]*Picture, numPics)
+func evolve(survivors []*picture.Picture) []*picture.Picture {
+	newPics := make([]*picture.Picture, numPics)
 	i := 0
 	for i < len(survivors) {
 		a := survivors[i]
 		b := survivors[rand.Intn(len(survivors))]
-		newPics[i] = a.cross(b)
+		newPics[i] = a.Cross(b)
 		i++
 	}
 
 	for i < len(newPics) {
 		a := survivors[rand.Intn(len(survivors))]
 		b := survivors[rand.Intn(len(survivors))]
-		newPics[i] = a.cross(b)
+		newPics[i] = a.Cross(b)
 		i++
 	}
 
 	for _, pic := range newPics {
 		r := rand.Intn(mutationRate)
 		for i := 0; i < r; i++ {
-			pic.mutate()
+			pic.Mutate()
 		}
 	}
 
 	return newPics
 }
 
-func newImage(p *Picture, width, height int32) *rl.Image {
+func newImage(p *picture.Picture, width, height int32) *rl.Image {
 	scale := 128.0
 	offset := -1 * scale
 	index := 0
@@ -276,9 +275,9 @@ func newImage(p *Picture, width, height int32) *rl.Image {
 		yy := float64(y)/float64(height)*2 - 1
 		for x := int32(0); x < width; x++ {
 			xx := float64(x)/float64(width)*2 - 1
-			r := p.r.Evaluate(xx, yy)
-			g := p.g.Evaluate(xx, yy)
-			b := p.b.Evaluate(xx, yy)
+			r := p.R.Evaluate(xx, yy)
+			g := p.G.Evaluate(xx, yy)
+			b := p.B.Evaluate(xx, yy)
 
 			imageData[index+0] = byte(r*scale - offset)
 			imageData[index+1] = byte(g*scale - offset)
