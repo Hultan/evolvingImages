@@ -17,13 +17,13 @@ type Button struct {
 var font rl.Font
 
 func initFont() {
-	font = rl.LoadFontEx("MesloLGLDZNerdFont-Bold.ttf", fontSize, []rune("Evolve!"), 0)
+	if font.BaseSize == 0 {
+		font = rl.LoadFontEx("MesloLGLDZNerdFont-Bold.ttf", fontSize, []rune("Evolve!"), 0)
+	}
 }
 
-func NewButton(index int32, rectangle rl.Rectangle, texture rl.Texture2D, isRightClicked func(*Button)) *Button {
-	if font.BaseSize == 0 {
-		initFont()
-	}
+func newButton(index int32, rectangle rl.Rectangle, texture rl.Texture2D, isRightClicked func(*Button)) *Button {
+	initFont()
 	return &Button{
 		Index:          index,
 		Rectangle:      rectangle,
@@ -34,10 +34,8 @@ func NewButton(index int32, rectangle rl.Rectangle, texture rl.Texture2D, isRigh
 	}
 }
 
-func NewTextButton(rectangle rl.Rectangle, text string, isLeftClicked func()) *Button {
-	if font.BaseSize == 0 {
-		initFont()
-	}
+func newTextButton(rectangle rl.Rectangle, text string, isLeftClicked func()) *Button {
+	initFont()
 	return &Button{
 		Index:          -1,
 		Rectangle:      rectangle,
@@ -47,25 +45,34 @@ func NewTextButton(rectangle rl.Rectangle, text string, isLeftClicked func()) *B
 	}
 }
 
-func (b *Button) Update() {
+func (b *Button) update() {
 	if rl.CheckCollisionPointRec(rl.GetMousePosition(), b.Rectangle) {
 		if rl.IsMouseButtonReleased(rl.MouseButtonLeft) {
 			if b.Text == "" {
+				// Image Button
 				b.Selected = !b.Selected
 			} else {
-				// Button was clicked
+				// Text Button
 				b.IsLeftClicked()
 			}
 		} else if rl.IsMouseButtonPressed(rl.MouseButtonRight) {
-			b.IsRightClicked(b)
+			if b.IsRightClicked != nil {
+				b.IsRightClicked(b)
+			}
 		}
 	}
 }
 
-func (b *Button) Draw() {
+func (b *Button) draw() {
 	if b.Text == "" {
+		// Image Button
 		rl.DrawTexture(b.Texture, int32(b.Rectangle.X), int32(b.Rectangle.Y), rl.White)
+
+		if b.Selected {
+			rl.DrawRectangleLinesEx(b.Rectangle, 2, rl.White)
+		}
 	} else {
+		// Text Button
 		rl.DrawRectangleRec(b.Rectangle, rl.White)
 		tw := rl.MeasureTextEx(font, b.Text, fontSize, 0)
 		x := b.Rectangle.X + b.Rectangle.Width/2 - tw.X/2
@@ -74,10 +81,6 @@ func (b *Button) Draw() {
 			X: x,
 			Y: y,
 		}
-		//rl.DrawText(b.Text, x, y, fontSize, rl.Black)
 		rl.DrawTextEx(font, b.Text, r, fontSize, 0, rl.Black)
-	}
-	if b.Selected {
-		rl.DrawRectangleLinesEx(b.Rectangle, 2, rl.White)
 	}
 }

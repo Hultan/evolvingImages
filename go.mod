@@ -2,7 +2,7 @@ module github.com/hultan/evolvingImage
 
 go 1.23.3
 
-require github.com/gen2brain/raylib-go/raylib v0.0.0-20241114190248-f465c30447d2
+require github.com/gen2brain/raylib-go/raylib v0.0.0-20241117153000-01864c04b849
 
 require (
 	github.com/ebitengine/purego v0.8.1 // indirect

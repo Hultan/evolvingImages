@@ -4,6 +4,8 @@ github.com/gen2brain/raylib-go/raylib v0.0.0-20241111144450-60446bce159d h1:jnxV
 github.com/gen2brain/raylib-go/raylib v0.0.0-20241111144450-60446bce159d/go.mod h1:BaY76bZk7nw1/kVOSQObPY1v1iwVE1KHAGMfvI6oK1Q=
 github.com/gen2brain/raylib-go/raylib v0.0.0-20241114190248-f465c30447d2 h1:2B1aTs1vObFD2T2XpnCIyVjRoupz1gxoMgfCnMJbmEA=
 github.com/gen2brain/raylib-go/raylib v0.0.0-20241114190248-f465c30447d2/go.mod h1:BaY76bZk7nw1/kVOSQObPY1v1iwVE1KHAGMfvI6oK1Q=
+github.com/gen2brain/raylib-go/raylib v0.0.0-20241117153000-01864c04b849 h1:7gRYddv1r8PrmQUmbWWD3GCbuYmo9JJ/UUBQlDRUIwg=
+github.com/gen2brain/raylib-go/raylib v0.0.0-20241117153000-01864c04b849/go.mod h1:BaY76bZk7nw1/kVOSQObPY1v1iwVE1KHAGMfvI6oK1Q=
 golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f h1:XdNn9LlyWAhLVp6P/i8QYBW+hlyhrhei9uErw2B5GJo=
 golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f/go.mod h1:D5SMRVC3C2/4+F/DB1wZsLRnSNimn2Sp/NPsCrsv8ak=
 golang.org/x/sys v0.27.0 h1:wBqf8DvsY9Y/2P8gAfPDEYNuS30J4lPHJxXSb/nJZ+s=

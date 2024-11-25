@@ -8,16 +8,13 @@ package main
 // TODO :
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 	"unsafe"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
-	. "github.com/hultan/evolvingImage/apt"
+	"github.com/hultan/evolvingImage/apt"
 )
 
 const (
@@ -55,10 +52,6 @@ type ImageResult struct {
 	index int32
 }
 
-type Picture struct {
-	r, g, b Node
-}
-
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.InitWindow(screenWidth, screenHeight, "Evolving Images")
@@ -66,49 +59,34 @@ func main() {
 
 	state = GuiState{zoom: stateInit}
 
+	// Handle parsing of an .apt file
 	args := os.Args
 	if len(args) > 1 {
-		bytes, err := os.ReadFile(args[1])
-		if err != nil {
-			panic(err)
-		}
-		str := string(bytes)
-		pictureNode := BeginLexing(str)
-		p := &Picture{
-			r: pictureNode.GetChildren()[0],
-			g: pictureNode.GetChildren()[1],
-			b: pictureNode.GetChildren()[2],
-		}
-		// TODO Duplicated code, see onFullScreen
-		zoomImage := generateImage(p, screenWidth, int32(float32(screenHeight)*0.9))
-		state.zoomImage = rl.LoadTextureFromImage(zoomImage)
-		state.zoomTree = p
-		state.zoom = stateZoom
-		state.zoomedIn = time.Now()
+		handleArgs(args[1])
 	}
 
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
 		// Update
 		if rl.IsWindowResized() {
-			onGenerateNewImage()
+			onGenerateNewImages()
 		}
 
 		if state.zoom == stateInit {
-			onGenerateNewImage()
+			onGenerateNewImages()
 			state.zoom = stateSelect
 		}
 
 		if evolveButton != nil {
-			evolveButton.Update()
+			evolveButton.update()
 		}
 
 		if rl.IsKeyPressed(rl.KeyS) && state.zoom == stateZoom {
-			onSaveTree(state.zoomTree)
+			state.zoomTree.save()
 		}
 
 		if rl.IsKeyPressed(rl.KeyF5) {
-			onGenerateNewImage()
+			onGenerateNewImages()
 		}
 
 		// Draw
@@ -121,7 +99,7 @@ func main() {
 			}
 			rl.DrawTexture(state.zoomImage, 0, 0, rl.White)
 		} else if state.zoom == stateSelect {
-			evolveButton.Draw()
+			evolveButton.draw()
 
 			select {
 			case img, ok := <-imageChannel:
@@ -145,17 +123,17 @@ func main() {
 						Width:  float32(picWidth),
 						Height: float32(picHeight),
 					}
-					buttons[img.index] = NewButton(img.index, rec, rl.LoadTextureFromImage(img.Image), onFullScreen)
+					buttons[img.index] = newButton(img.index, rec, rl.LoadTextureFromImage(img.Image), onFullScreen)
 				}
 			default:
 				// Do nothing
 			}
 
 			// Draw textures at the correct position
-			for _, button := range buttons {
-				if button != nil {
-					button.Update()
-					button.Draw()
+			for _, b := range buttons {
+				if b != nil {
+					b.update()
+					b.draw()
 				}
 			}
 		}
@@ -178,43 +156,36 @@ func main() {
 	rl.CloseWindow()
 }
 
-func onSaveTree(p *Picture) {
-	files, err := os.ReadDir("./")
+func handleArgs(fileName string) {
+	bytes, err := os.ReadFile(fileName)
 	if err != nil {
 		panic(err)
 	}
-
-	biggest := 0
-	for _, f := range files {
-		name := f.Name()
-		if strings.HasSuffix(name, ".apt") {
-			numberString := strings.TrimSuffix(name, ".apt")
-			num, err := strconv.Atoi(numberString)
-			if err != nil {
-				panic(err)
-			}
-			if num > biggest {
-				biggest = num
-			}
-		}
+	str := string(bytes)
+	pictureNode := apt.BeginLexing(str)
+	p := &Picture{
+		r: pictureNode.GetChildren()[0],
+		g: pictureNode.GetChildren()[1],
+		b: pictureNode.GetChildren()[2],
 	}
-	name := fmt.Sprintf("%d.apt", biggest+1)
-	file, err := os.Create(name)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	fmt.Fprintf(file, p.String())
+	zoomIn(p)
 }
 
-func onGenerateNewImage() {
+func zoomIn(p *Picture) {
+	zoomImage := newImage(p, screenWidth, int32(float32(screenHeight)*0.9))
+	state.zoomImage = rl.LoadTextureFromImage(zoomImage)
+	state.zoomTree = p
+	state.zoom = stateZoom
+	state.zoomedIn = time.Now()
+}
+
+func onGenerateNewImages() {
 	screenWidth = int32(rl.GetScreenWidth())
 	screenHeight = int32(rl.GetScreenHeight())
 	picWidth = int32(float32(screenWidth/cols) * 0.9)
 	picHeight = int32(float32(screenHeight/rows) * 0.8)
 	for i := range pictures {
-		pictures[i] = CreateNewPicture()
+		pictures[i] = newPicture()
 	}
 
 	evolveRect := rl.Rectangle{
@@ -223,11 +194,11 @@ func onGenerateNewImage() {
 		Width:  float32(picWidth),
 		Height: float32(screenHeight) * 0.08,
 	}
-	evolveButton = NewTextButton(evolveRect, "Evolve!", evolveButtonClicked)
+	evolveButton = newTextButton(evolveRect, "Evolve!", onEvolveButtonClicked)
 
 	for i := range buttons {
 		go func(i int) {
-			image := generateImage(pictures[i], picWidth, picHeight)
+			image := newImage(pictures[i], picWidth, picHeight)
 			imageChannel <- ImageResult{
 				image,
 				int32(i),
@@ -238,15 +209,11 @@ func onGenerateNewImage() {
 
 func onFullScreen(button *Button) {
 	if state.zoom == stateSelect {
-		zoomImage := generateImage(pictures[button.Index], screenWidth, int32(float32(screenHeight)*0.9))
-		state.zoomImage = rl.LoadTextureFromImage(zoomImage)
-		state.zoomTree = pictures[button.Index]
-		state.zoom = stateZoom
-		state.zoomedIn = time.Now()
+		zoomIn(pictures[button.Index])
 	}
 }
 
-func evolveButtonClicked() {
+func onEvolveButtonClicked() {
 	selectedPictures := make([]*Picture, 0)
 	for i, button := range buttons {
 		if button.Selected {
@@ -262,7 +229,7 @@ func evolveButtonClicked() {
 		pictures = evolve(selectedPictures)
 		for i := range pictures {
 			go func(i int) {
-				pixels := generateImage(pictures[i], picWidth, picHeight)
+				pixels := newImage(pictures[i], picWidth, picHeight)
 				imageChannel <- ImageResult{
 					pixels,
 					int32(i),
@@ -278,14 +245,14 @@ func evolve(survivors []*Picture) []*Picture {
 	for i < len(survivors) {
 		a := survivors[i]
 		b := survivors[rand.Intn(len(survivors))]
-		newPics[i] = cross(a, b)
+		newPics[i] = a.cross(b)
 		i++
 	}
 
 	for i < len(newPics) {
 		a := survivors[rand.Intn(len(survivors))]
 		b := survivors[rand.Intn(len(survivors))]
-		newPics[i] = cross(a, b)
+		newPics[i] = a.cross(b)
 		i++
 	}
 
@@ -299,41 +266,7 @@ func evolve(survivors []*Picture) []*Picture {
 	return newPics
 }
 
-func (p *Picture) pickRandomColor() Node {
-	r := rand.Intn(3)
-	switch r {
-	case 0:
-		return p.r
-	case 1:
-		return p.g
-	case 2:
-		return p.b
-	default:
-		panic("PickRandomColor : Should not happen!")
-	}
-}
-
-func cross(a, b *Picture) *Picture {
-	aCopy := &Picture{
-		CopyTree(a.r, nil),
-		CopyTree(a.g, nil),
-		CopyTree(a.b, nil),
-	}
-	aColor := aCopy.pickRandomColor()
-	bColor := b.pickRandomColor()
-
-	aIndex := rand.Intn(aColor.NodeCount())
-	aNode, _ := GetNthNode(aColor, aIndex, 0)
-
-	bIndex := rand.Intn(bColor.NodeCount())
-	bNode, _ := GetNthNode(bColor, bIndex, 0)
-	bNodeCopy := CopyTree(bNode, bNode.GetParent())
-
-	ReplaceNode(aNode, bNodeCopy)
-	return aCopy
-}
-
-func generateImage(p *Picture, width, height int32) *rl.Image {
+func newImage(p *Picture, width, height int32) *rl.Image {
 	scale := 128.0
 	offset := -1 * scale
 	index := 0
@@ -358,73 +291,4 @@ func generateImage(p *Picture, width, height int32) *rl.Image {
 	var image = rl.NewImage(imageData, width, height, 1, rl.UncompressedR8g8b8a8)
 	image.Data = unsafe.Pointer(unsafe.SliceData(imageData))
 	return image
-}
-
-func CreateNewPicture() *Picture {
-	p := &Picture{}
-
-	// Generate image
-	p.r = GetRandomNode()
-	p.g = GetRandomNode()
-	p.b = GetRandomNode()
-
-	const nodes = imageComplexity
-
-	num := rand.Intn(nodes) + imageMinComplexity
-	for i := 0; i < num; i++ {
-		p.r.AddRandom(GetRandomNode())
-	}
-
-	num = rand.Intn(nodes) + imageMinComplexity
-	for i := 0; i < num; i++ {
-		p.g.AddRandom(GetRandomNode())
-	}
-
-	num = rand.Intn(nodes) + imageMinComplexity
-	for i := 0; i < num; i++ {
-		p.b.AddRandom(GetRandomNode())
-	}
-
-	for p.r.AddLeaf(GetRandomLeafNode()) {
-	}
-	for p.b.AddLeaf(GetRandomLeafNode()) {
-	}
-	for p.g.AddLeaf(GetRandomLeafNode()) {
-	}
-
-	return p
-}
-
-func (p *Picture) String() string {
-	return "( Picture \n" + p.r.String() + " \n" + p.g.String() + " \n" + p.b.String() + " \n)"
-}
-
-func (p *Picture) mutate() {
-	r := rand.Intn(3)
-	var nodeToMutate Node
-
-	switch r {
-	case 0:
-		nodeToMutate = p.r
-	case 1:
-		nodeToMutate = p.g
-	case 2:
-		nodeToMutate = p.b
-	default:
-		panic("should not happen")
-	}
-
-	count := nodeToMutate.NodeCount()
-	r = rand.Intn(count)
-	nodeToMutate, count = GetNthNode(nodeToMutate, r, 0)
-	// If the node that we mutated is one of the root nodes
-	// we need to handle that.
-	mutation := Mutate(nodeToMutate)
-	if mutation == p.r {
-		p.r = mutation
-	} else if mutation == p.g {
-		p.g = mutation
-	} else if mutation == p.b {
-		p.b = mutation
-	}
 }
